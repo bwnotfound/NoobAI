@@ -8,12 +8,12 @@ class BookCorpus(Dataset):
     def __init__(
         self,
         enc: tiktoken.Encoding,
+        cache_dir,
         is_val=False,
         max_len=None,
         split=False,
         val_rate=0.005,
         seed=1437,
-        cache_dir="D:/AI/HuggingFace/datasets",
     ):
         super().__init__()
         self.eot_token = enc.eot_token

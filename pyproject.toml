@@ -5,7 +5,13 @@ build-backend = "setuptools.build_meta"
 [project]
 name = 'simpleai'
 authors = [{ name = '蓝白bw', email = '2846131442@qq.com' }]
-version = '0.0.1'
+version = '0.0.2'
 description = 'Tools created by 蓝白bw'
 license = { file = "LICENSE" }
 dependencies = ['torch', 'numpy', 'tqdm']
+
+# [tool.setuptools.packages.find]
+# where = ["."]
+
+[tool.setuptools.package-data]
+"*" = ["*.json"]

@@ -5,7 +5,7 @@ import pandas as pd
 
 
 class TranslateDataset(Dataset):
-    def __init__(self, encoder: tiktoken.Encoding, data_path="./datasets/fra.txt"):
+    def __init__(self, encoder: tiktoken.Encoding, data_path):
         self.dataset = pd.read_csv(data_path, delimiter='\t', header=None)
         self.dataset = self.dataset.iloc[:, :2]
         self.encoder = encoder

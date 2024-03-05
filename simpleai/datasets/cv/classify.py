@@ -9,10 +9,10 @@ class ImageNetSmall(Dataset):
 
     def __init__(
         self,
+        cache_dir,
         is_val=False,
         val_rate=0.005,
         seed=1437,
-        cache_dir="D:/AI/HuggingFace/datasets",
         transforms=None,
         need_transform=True,
         disk_dir=None,
