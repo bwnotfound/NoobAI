@@ -5,7 +5,7 @@ from tqdm import tqdm
 import torch
 from torch import nn, optim
 from torch.utils.data import DataLoader
-from .model import STM
+from simpleai.model.sam.model import STM
 from simpleai.task.memory.number_recall import NumberRecallDataset
 from simpleai.data.util import load_model, save_model
 
@@ -75,8 +75,8 @@ def train(config_path=None, device=None):
     # print("========")
 
     criterion = nn.CrossEntropyLoss(ignore_index=-1)
-    optimizer = optim.RMSprop(model.parameters(), lr=1e-4, momentum=0.9)
-    # optimizer = optim.Adam(model.parameters(), lr=1e-3)
+    # optimizer = optim.RMSprop(model.parameters(), lr=1e-4, momentum=0.9)
+    optimizer = optim.Adam(model.parameters(), lr=1e-4)
 
     if config.resume:
         step = load_model(save_dir, model, optimizer)
@@ -102,6 +102,7 @@ def train(config_path=None, device=None):
             out = torch.zeros([1, label.size(0), dataset.n_vocab], device=device)
 
             out, _ = model(data)
+            acc = (out.argmax(dim=-1) == label).sum().float() / label.size(0)
             loss = criterion(out, label)
 
             loss.backward()
@@ -109,7 +110,7 @@ def train(config_path=None, device=None):
             # insignificant deviation from the paper where they are clipped to (-10,10)
             nn.utils.clip_grad_value_(model.parameters(), config.clip_grad)
             optimizer.step()
-            t_bar.set_postfix_str(f"loss: {loss.item():.5f}")
+            t_bar.set_postfix_str(f"loss: {loss.item():.5f}, accuracy: {acc:.4f}")
             t_bar.update()
             step += 1
             if step % config.save_iter == 0:
@@ -117,3 +118,7 @@ def train(config_path=None, device=None):
             if config.eval_iter is not None and step % config.eval_iter == 0:
                 pass
         t_bar.close()
+
+
+if __name__ == '__main__':
+    train()
