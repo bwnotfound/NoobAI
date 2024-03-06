@@ -52,8 +52,7 @@ def generate_data(save_path=None, step_num=24, row_nums=10000):
         if os.path.isdir(save_path):
             save_path = os.path.join(save_path, 'associative-retrieval.pkl')
         save_dir = os.path.dirname(save_path)
-        if not os.path.exists(save_dir):
-            os.makedirs(save_dir)
+        os.makedirs(save_dir, exist_ok=True)
     x = np.zeros([row_nums, step_num * 2 + 3], dtype=np.int64)
 
     y = np.zeros([row_nums], dtype=np.int64)
@@ -74,7 +73,7 @@ class NumberRecallDataset(Dataset):
 
     def __init__(self, path=None):
         if path is None:
-            path = './associative-retrieval.pkl'
+            path = './data/associative-retrieval.pkl'
         if not os.path.exists(path):
             path = generate_data(path)
         with open(path, 'rb') as f:
@@ -97,4 +96,4 @@ class NumberRecallDataset(Dataset):
 
 
 if __name__ == '__main__':
-    generate_data('./associative-retrieval.pkl')
+    generate_data('./data/associative-retrieval.pkl')

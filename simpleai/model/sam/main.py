@@ -1,13 +1,13 @@
 import json
 import os
 
-from tqdm import tqdm
 import torch
 from torch import nn, optim
 from torch.utils.data import DataLoader
 from simpleai.model.sam.model import STM
 from simpleai.task.memory.number_recall import NumberRecallDataset
-from simpleai.data.util import load_model, save_model
+from simpleai.data.util import load_model
+from simpleai.util.trainer import SimpleTrainer
 
 
 class Config:
@@ -26,9 +26,9 @@ class Config:
     rel_size = 96
     clip_grad = 10
     num_workers = 0
-    resume = False
+    resume = True
     model_dir = None
-    data_dir = "./associative-retrieval.pkl"
+    data_path = "./data/associative-retrieval.pkl"
     log_dir = "./log"
 
 
@@ -52,7 +52,7 @@ def train(config_path=None, device=None):
         save_dir = os.path.join(log_dir, "model")
     os.makedirs(save_dir, exist_ok=True)
 
-    dataset = NumberRecallDataset()
+    dataset = NumberRecallDataset(path=config.data_path)
     dataloader = DataLoader(
         dataset,
         batch_size=config.batch_size,
@@ -74,7 +74,6 @@ def train(config_path=None, device=None):
     # print(model.calculate_num_params())
     # print("========")
 
-    criterion = nn.CrossEntropyLoss(ignore_index=-1)
     # optimizer = optim.RMSprop(model.parameters(), lr=1e-4, momentum=0.9)
     optimizer = optim.Adam(model.parameters(), lr=1e-4)
 
@@ -84,40 +83,23 @@ def train(config_path=None, device=None):
         step = 0
 
     model.train()
+    trainer = SimpleTrainer(
+        model,
+        dataloader,
+        optimizer,
+        device=device,
+        save_dir=save_dir,
+    )
+    trainer.set_criteria(nn.CrossEntropyLoss(ignore_index=-1))
     print("===training===")
-    # ----------------------------------------------------------------------------
-    # -- basic training loop
-    # ----------------------------------------------------------------------------
-    epoch = 0
-    for epoch in range(config.epoch):
-        t_bar = tqdm(
-            total=len(dataloader), ncols=100, desc=f"Epoch {epoch}", colour="green"
-        )
-        for data, label in dataloader:
-            data, label = data.to(device, non_blocking=True), label.to(
-                device, non_blocking=True
-            )
-            optimizer.zero_grad()
-
-            out = torch.zeros([1, label.size(0), dataset.n_vocab], device=device)
-
-            out, _ = model(data)
-            acc = (out.argmax(dim=-1) == label).sum().float() / label.size(0)
-            loss = criterion(out, label)
-
-            loss.backward()
-            # clips gradient in the range [-10,10]. Again there is a slight but
-            # insignificant deviation from the paper where they are clipped to (-10,10)
-            nn.utils.clip_grad_value_(model.parameters(), config.clip_grad)
-            optimizer.step()
-            t_bar.set_postfix_str(f"loss: {loss.item():.5f}, accuracy: {acc:.4f}")
-            t_bar.update()
-            step += 1
-            if step % config.save_iter == 0:
-                save_model(save_dir, model, optimizer, step)
-            if config.eval_iter is not None and step % config.eval_iter == 0:
-                pass
-        t_bar.close()
+    trainer.train(
+        step=step,
+        epochs=config.epoch,
+        save_iter=config.save_iter,
+        eval_iter=config.eval_iter,
+        clip_grad=config.clip_grad,
+        simple_accuracy=True,
+    )
 
 
 if __name__ == '__main__':

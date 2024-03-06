@@ -10,8 +10,12 @@ description = 'Tools created by 蓝白bw'
 license = { file = "LICENSE" }
 dependencies = ['torch', 'numpy', 'tqdm']
 
-# [tool.setuptools.packages.find]
-# where = ["."]
+[tool.setuptools]
+py-modules = ["simpleai"]
+# package-dir ={ "" = "./simpleai" }
+
+[tool.setuptools.packages.find]
+include = ["simpleai*"]
 
 [tool.setuptools.package-data]
 "*" = ["*.json"]

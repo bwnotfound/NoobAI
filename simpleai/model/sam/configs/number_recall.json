@@ -4,6 +4,7 @@
     "eval_iter": 1000,
     "save_iter": 200,
     "batch_size": 32,
+    "num_workers": 0,
     "in_dim": 128,
     "controller_size": 256,
     "memory_units": 256,
@@ -13,8 +14,8 @@
     "slot_size": 96,
     "rel_size": 96,
     "clip_grad": 10,
-    "resume": false,
+    "resume": true,
     "model_dir": null,
-    "data_dir": "./associative-retrieval.pkl",
+    "data_path": "./data/associative-retrieval.pkl",
     "log_dir": "./log"
 }
