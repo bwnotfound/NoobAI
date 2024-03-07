@@ -71,9 +71,7 @@ def generate_data(save_path=None, step_num=24, row_nums=10000):
 class NumberRecallDataset(Dataset):
     n_vocab = elem_num
 
-    def __init__(self, path=None):
-        if path is None:
-            path = './data/associative-retrieval.pkl'
+    def __init__(self, path='./data/associative-retrieval.pkl'):
         if not os.path.exists(path):
             path = generate_data(path)
         with open(path, 'rb') as f:
