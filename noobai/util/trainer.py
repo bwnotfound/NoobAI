@@ -148,6 +148,7 @@ class SimpleTrainer:
                     else:
                         msg += ", accuracy: None"
                 if self.scheduler is not None:
+                    self.scheduler.step()
                     try:
                         lr = self.scheduler.get_lr()
                     except NotImplementedError:

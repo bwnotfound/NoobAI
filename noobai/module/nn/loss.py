@@ -13,7 +13,7 @@ class MaskedCrossEntropyLoss:
     def loss_func(self, x, y, dim):
         if dim == -1:
             dim = len(x.shape) - 1
-        tem = range(len(x.shape))
+        tem = list(range(len(x.shape)))
         tem[1], tem[dim] = tem[dim], tem[1]
         x = x.permute(*tem)
         return self.cross_entropy(x, y)
