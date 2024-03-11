@@ -16,6 +16,7 @@ class SimpleTrainer:
         model,
         dataloader,
         optimizer,
+        scheduler=None,
         loss_func=None,
         eval_func=None,
         device=None,
@@ -25,6 +26,7 @@ class SimpleTrainer:
         self.model = model
         self.optimizer = optimizer
         self.dataloader = dataloader
+        self.scheduler = scheduler
         self.loss_func = loss_func
         self.device = device
         self.eval_func = eval_func
@@ -91,6 +93,7 @@ class SimpleTrainer:
             self.save_dir,
             self.model,
             self.optimizer,
+            scheduler=self.scheduler,
             model_name=self.model_name,
         )
 
@@ -110,6 +113,8 @@ class SimpleTrainer:
         '''
         if load_model:
             step = self.load_model()
+        if self.scheduler is not None:
+            self.scheduler.step()
         for epoch in range(epochs):
             t_bar = tqdm(
                 total=len(self.dataloader),
@@ -142,6 +147,14 @@ class SimpleTrainer:
                         msg += f", accuracy: {acc:.4f}"
                     else:
                         msg += ", accuracy: None"
+                if self.scheduler is not None:
+                    try:
+                        lr = self.scheduler.get_lr()
+                    except NotImplementedError:
+                        lr = self.scheduler.get_last_lr()
+                    if isinstance(lr, Iterable):
+                        lr = lr[0]
+                    msg += f", lr: {lr:.3e}"
                 t_bar.set_postfix_str(msg)
                 t_bar.update()
                 step += 1
@@ -152,6 +165,7 @@ class SimpleTrainer:
                         self.model,
                         self.optimizer,
                         step,
+                        scheduler=self.scheduler,
                         model_name=self.model_name,
                     )
                 if (
