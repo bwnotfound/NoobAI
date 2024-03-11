@@ -6,7 +6,7 @@ import torch.nn.functional as F
 from typing import Iterable
 from tqdm import tqdm
 
-from simpleai.data.util import save_model, load_model
+from noobai.data.util import save_model, load_model
 
 
 class SimpleTrainer:

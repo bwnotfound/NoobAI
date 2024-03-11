@@ -4,10 +4,10 @@ import os
 import torch
 from torch import nn, optim
 from torch.utils.data import DataLoader
-from simpleai.model.sam.model import STM
-from simpleai.task.memory.number_recall import NumberRecallDataset
-from simpleai.data.util import load_model
-from simpleai.util.trainer import SimpleTrainer
+from noobai.model.sam.model import STM
+from noobai.task.memory.number_recall import NumberRecallDataset
+from noobai.data.util import load_model
+from noobai.util.trainer import SimpleTrainer
 
 
 class Config:

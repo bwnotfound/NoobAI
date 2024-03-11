@@ -22,7 +22,7 @@ class OpenOrcaDataset(Dataset):
         seed=1437,
     ):
         super().__init__()
-        if not hasattr(enc, "_simpleai_is_init"):
+        if not hasattr(enc, "_noobai_is_init"):
             raise ValueError(
                 "You should init encoder by OpenOrcaDataset.init_encoder manually."
             )
@@ -53,7 +53,7 @@ class OpenOrcaDataset(Dataset):
                 OpenOrcaDataset.answer_end: enc.max_token_value + 4,
             },
         )
-        setattr(enc, "_simpleai_is_init", True)
+        setattr(enc, "_noobai_is_init", True)
         return enc
 
     def handle(self, x, enc: tiktoken.Encoding):

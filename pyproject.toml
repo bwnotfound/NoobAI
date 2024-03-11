@@ -3,7 +3,7 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = 'simpleai'
+name = 'noobai'
 authors = [{ name = '蓝白bw', email = '2846131442@qq.com' }]
 version = '0.0.2'
 description = 'Simple ai tools created by 蓝白bw'
@@ -11,11 +11,11 @@ license = { file = "LICENSE" }
 dependencies = ['torch', 'numpy', 'tqdm']
 
 [tool.setuptools]
-py-modules = ["simpleai"]
-# package-dir ={ "" = "./simpleai" }
+py-modules = ["noobai"]
+# package-dir ={ "" = "./noobai" }
 
 [tool.setuptools.packages.find]
-include = ["simpleai*"]
+include = ["noobai*"]
 
 [tool.setuptools.package-data]
 "*" = ["*.json"]
