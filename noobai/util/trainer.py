@@ -3,8 +3,10 @@ import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.utils.tensorboard.writer import SummaryWriter
 from typing import Iterable
 from tqdm import tqdm
+
 
 from noobai.data.util import save_model, load_model
 from noobai.module.nn.loss import MaskedCrossEntropyLoss
@@ -39,7 +41,11 @@ class SimpleTrainer:
             self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         if self.save_dir is None:
             self.save_dir = "./output"
-            os.makedirs(self.save_dir, exist_ok=True)
+        self.save_dir = os.path.join(self.save_dir, self.model_name)
+        self.log_dir = os.path.join(self.save_dir, "logs")
+        os.makedirs(self.save_dir, exist_ok=True)
+        os.makedirs(self.log_dir, exist_ok=True)
+        self.writer = SummaryWriter(self.log_dir)
         self.model.to(self.device)
 
     def simple_loss_func(self, output, data, len_mask=None):
@@ -117,6 +123,7 @@ class SimpleTrainer:
         epochs=100000,
         save_iter=200,
         eval_iter=None,
+        log_iter=None,
         has_target=True,
         data_mode=None,
         output_mode=None,
@@ -229,7 +236,17 @@ class SimpleTrainer:
                 t_bar.set_postfix_str(msg)
                 t_bar.update()
                 step += 1
-
+                if log_iter is not None and step % log_iter == 0:
+                    self.writer.add_scalar(
+                        "loss", loss.item(), step, double_precision=True
+                    )
+                    if self.scheduler is not None:
+                        self.writer.add_scalar("lr", lr, step, double_precision=True)
+                    if simple_accuracy:
+                        self.writer.add_scalar(
+                            "accuracy", acc, step, double_precision=True
+                        )
+                    self.writer.flush()
                 if step % save_iter == 0:
                     save_model(
                         self.save_dir,
