@@ -29,5 +29,6 @@ class MaskedCrossEntropyLoss:
                 0
             ) < mask.unsqueeze(1)
             mask = mask.transpose(0, 1)
+        target = torch.clone(target)
         target[~mask] = self.ignore_index
         return self.loss_func(logits, target, dim)

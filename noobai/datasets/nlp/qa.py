@@ -5,6 +5,8 @@ from torch.utils.data import Dataset
 import tiktoken
 from datasets import load_dataset
 
+from datasets.config import DEFAULT_HF_DATASETS_CACHE
+
 
 class OpenOrcaDataset(Dataset):
     sys_prompt_start = "<|sys_prompt_start|>"
@@ -15,7 +17,7 @@ class OpenOrcaDataset(Dataset):
     def __init__(
         self,
         enc: tiktoken.Encoding,
-        cache_dir=None,
+        cache_dir=DEFAULT_HF_DATASETS_CACHE,
         is_val=False,
         val_rate=0.0005,
         max_len=512,

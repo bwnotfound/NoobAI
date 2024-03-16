@@ -3,29 +3,39 @@ from torch.utils.data import Dataset
 import tiktoken
 from datasets import load_dataset
 
+from datasets.config import DEFAULT_HF_DATASETS_CACHE
+
 
 class BookCorpus(Dataset):
     def __init__(
         self,
         enc: tiktoken.Encoding,
-        cache_dir,
-        is_val=False,
+        cache_dir=DEFAULT_HF_DATASETS_CACHE,
+        data_size=0.0002,
         max_len=None,
         split=False,
-        val_rate=0.005,
         seed=1437,
+        mode=0,
     ):
+        dataset_url_dict = {
+            0: "bookcorpus",
+            1: "saibo/bookcorpus_compact_256",
+            2: "saibo/bookcorpus_compact_512",
+            3: "saibo/bookcorpus_compact_1024",
+            4: "saibo/bookcorpus_small_compact_512",
+            5: "saibo/bookcorpus_small_compact_1024",
+        }
         super().__init__()
         self.eot_token = enc.eot_token
         self.max_len = max_len
-        self.dataset = load_dataset("bookcorpus", cache_dir=cache_dir)
-        self.split_dataset = self.dataset["train"].train_test_split(
-            test_size=val_rate, seed=seed, shuffle=True
-        )
-        if is_val:
+        self.dataset = load_dataset(dataset_url_dict[mode], cache_dir=cache_dir)
+        if data_size < 1:
+            self.split_dataset = self.dataset["train"].train_test_split(
+                test_size=data_size, seed=seed, shuffle=True
+            )
             self.dataset = self.split_dataset["test"]
         else:
-            self.dataset = self.split_dataset["train"]
+            self.dataset = self.dataset["train"]
         self.dataset = self.dataset.to_list()
         self.dataset = list(map(lambda x: enc.encode_ordinary(x['text']), self.dataset))
         if max_len is not None:
@@ -39,7 +49,7 @@ class BookCorpus(Dataset):
                     for i in range(0, len(d), max_len - 1):
                         new_dataset.append(d[i : i + max_len - 1])
                 self.dataset = new_dataset
-        self.dataset = [d for d in new_dataset if len(d) > 0]
+        self.dataset = [d for d in self.dataset if len(d) > 0]
 
     def __len__(self):
         return len(self.dataset)
