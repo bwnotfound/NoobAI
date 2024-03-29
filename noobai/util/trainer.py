@@ -1,9 +1,10 @@
 import os
+import datetime
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.utils.tensorboard.writer import SummaryWriter
+from torch.utils.tensorboard import SummaryWriter
 from typing import Iterable
 from tqdm import tqdm
 
@@ -25,6 +26,7 @@ class SimpleTrainer:
         device=None,
         save_dir=None,
         model_name="model",
+        log_name=None,
     ):
         self.model = model
         self.optimizer = optimizer
@@ -42,11 +44,14 @@ class SimpleTrainer:
         if self.save_dir is None:
             self.save_dir = "./output"
         self.save_dir = os.path.join(self.save_dir, self.model_name)
+
         self.log_dir = os.path.join(self.save_dir, "logs")
+        if log_name is not None:
+            self.log_dir = os.path.join(self.log_dir, log_name)
         os.makedirs(self.save_dir, exist_ok=True)
         os.makedirs(self.log_dir, exist_ok=True)
-        self.writer = SummaryWriter(self.log_dir)
         self.model.to(self.device)
+        self.writer = None
 
     def simple_loss_func(self, output, data, len_mask=None):
         criteria = None
@@ -109,17 +114,18 @@ class SimpleTrainer:
         self.criteria = func
 
     def load_model(self):
-        return load_model(
+        self.step = load_model(
             self.save_dir,
             self.model,
             self.optimizer,
             scheduler=self.scheduler,
             model_name=self.model_name,
         )
+        return self.step
 
     def train(
         self,
-        step=0,
+        step=None,
         epochs=100000,
         save_iter=200,
         eval_iter=None,
@@ -130,6 +136,7 @@ class SimpleTrainer:
         load_model=True,
         simple_accuracy=True,
         clip_grad=None,
+        save_model_num=2,
     ):
         r'''
         accuracy_mode: None=no acc.
@@ -160,7 +167,9 @@ class SimpleTrainer:
             if cnt > 1:
                 raise ValueError("output_mode can only have one element with enum 2.")
         if load_model:
-            step = self.load_model()
+            self.step = self.load_model()
+        if step is not None:
+            self.step = step
         if self.scheduler is not None:
             self.scheduler.step()
         for epoch in range(epochs):
@@ -235,31 +244,36 @@ class SimpleTrainer:
                     msg += f", lr: {lr:.3e}"
                 t_bar.set_postfix_str(msg)
                 t_bar.update()
-                step += 1
-                if log_iter is not None and step % log_iter == 0:
+                self.step += 1
+                if log_iter is not None and self.step % log_iter == 0:
+                    if self.writer is None:
+                        self.writer = SummaryWriter(self.log_dir, flush_secs=5)
                     self.writer.add_scalar(
-                        "loss", loss.item(), step, double_precision=True
+                        "loss", loss.item(), self.step, double_precision=True
                     )
                     if self.scheduler is not None:
-                        self.writer.add_scalar("lr", lr, step, double_precision=True)
+                        self.writer.add_scalar(
+                            "lr", lr, self.step, double_precision=True
+                        )
                     if simple_accuracy:
                         self.writer.add_scalar(
-                            "accuracy", acc, step, double_precision=True
+                            "accuracy", acc, self.step, double_precision=True
                         )
-                    self.writer.flush()
-                if step % save_iter == 0:
+
+                if self.step % save_iter == 0:
                     save_model(
                         self.save_dir,
                         self.model,
                         self.optimizer,
-                        step,
+                        self.step,
                         scheduler=self.scheduler,
                         model_name=self.model_name,
+                        max_num=save_model_num,
                     )
                 if (
                     eval_iter is not None
                     and self.eval_func is not None
-                    and step % eval_iter == 0
+                    and self.step % eval_iter == 0
                 ):
                     self.eval_func(
                         [item for i, item in enumerate(output) if 3 in output_mode[i]],
