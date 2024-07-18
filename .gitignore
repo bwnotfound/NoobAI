@@ -162,3 +162,4 @@ cython_debug/
 .vscode/
 /log/
 /data/
+/test.py
