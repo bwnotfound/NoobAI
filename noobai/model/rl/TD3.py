@@ -101,7 +101,10 @@ class TD3(object):
         # Sample replay buffer
         sampled_data = replay_buffer.sample(batch_size)
         sampled_data = [data.to(self.device) for data in sampled_data]
-        state, action, next_state, reward, not_done = sampled_data
+        sampled_data = [
+            data if len(data.shape) > 1 else data.unsqueeze(1) for data in sampled_data
+        ]
+        state, action, next_state, reward, done = sampled_data
         with torch.no_grad():
             # Select action according to policy and add clipped noise
             noise = (torch.randn_like(action) * self.policy_noise).clamp(
@@ -115,7 +118,7 @@ class TD3(object):
             # Compute the target Q value
             target_Q1, target_Q2 = self.critic_target(next_state, next_action)
             target_Q = torch.min(target_Q1, target_Q2)
-            target_Q = reward + not_done * self.discount * target_Q
+            target_Q = reward + (1 - done) * self.discount * target_Q
 
         # Get current Q estimates
         current_Q1, current_Q2 = self.critic(state, action)
@@ -164,7 +167,7 @@ class TD3(object):
                 )
             stats["actor_loss"] = actor_loss.item()
         return stats
-            
+
     def dumps(self):
         return {
             "critic": self.critic.state_dict(),
