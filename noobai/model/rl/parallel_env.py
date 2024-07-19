@@ -7,7 +7,7 @@ from threading import Thread, Event
 import numpy as np
 import torch
 
-from noobai.model.rl.reply_buffer import BaseReplyBuffer
+from noobai.model.rl.replay_buffer import BaseReplayBuffer
 
 
 class GymEnvBatchWrapper:
@@ -123,7 +123,7 @@ class GymEnvContinuousWrapper:
 
         self.stop_event = Event()
 
-    def start(self, model, reply_buffer: BaseReplyBuffer, device=None):
+    def start(self, model, replay_buffer: BaseReplayBuffer, device=None):
         if device is None:
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.stop_event.clear()
@@ -171,16 +171,14 @@ class GymEnvContinuousWrapper:
                                     raise RuntimeError(
                                         f"Cannot specified data_mode: {data_mode}"
                                     )
-                            reply_buffer.add(data)
+                            replay_buffer.add(data)
                     state, _ = env_list[i].reset()
                     last_states[i] = state
                     env_is_dones[i] = False
                 last_states_numpy = np.array(
                     [np.array(last_state) for last_state in last_states]
                 )
-                model_input = torch.tensor(
-                    [torch.tensor(last_state) for last_state in last_states_numpy]
-                ).to(device)
+                model_input = torch.FloatTensor(last_states_numpy).to(device)
                 model_output = model(model_input)
                 if isinstance(model_output, (list, tuple)):
                     model_output = model_output[0]
@@ -217,7 +215,7 @@ class GymEnvContinuousWrapper:
                                 raise RuntimeError(
                                     f"Cannot specified data_mode: {data_mode}"
                                 )
-                        reply_buffer.add(data)
+                        replay_buffer.add(data)
 
         Thread(target=run).start()
 

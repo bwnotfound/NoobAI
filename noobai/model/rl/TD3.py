@@ -5,8 +5,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 # Implementation of Twin Delayed Deep Deterministic Policy Gradients (TD3)
 # Paper: https://arxiv.org/abs/1802.09477
 
@@ -73,8 +71,9 @@ class TD3(object):
         policy_noise=0.2,
         noise_clip=0.5,
         policy_freq=2,
+        device="cuda",
     ):
-
+        self.device = device
         self.actor = Actor(state_dim, action_dim, max_action).to(device)
         self.actor_target = copy.deepcopy(self.actor)
         self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=3e-4)
@@ -93,15 +92,16 @@ class TD3(object):
         self.total_it = 0
 
     def select_action(self, state):
-        state = torch.FloatTensor(state.reshape(1, -1)).to(device)
-        return self.actor(state).cpu().data.numpy().flatten()
+        state = torch.FloatTensor(state.reshape(1, -1)).to(self.device)
+        return self.actor(state).cpu().detach().numpy().flatten()
 
     def train(self, replay_buffer, batch_size=256):
         self.total_it += 1
 
         # Sample replay buffer
-        state, action, next_state, reward, not_done = replay_buffer.sample(batch_size)
-
+        sampled_data = replay_buffer.sample(batch_size)
+        sampled_data = [data.to(self.device) for data in sampled_data]
+        state, action, next_state, reward, not_done = sampled_data
         with torch.no_grad():
             # Select action according to policy and add clipped noise
             noise = (torch.randn_like(action) * self.policy_noise).clamp(
@@ -130,6 +130,13 @@ class TD3(object):
         critic_loss.backward()
         self.critic_optimizer.step()
 
+        stats = {
+            "critic_loss": critic_loss.item(),
+            "target_Q_mean": target_Q.mean().item(),
+            "reward_mean": reward.mean().item(),
+            "current_Q1_mean": current_Q1.mean().item(),
+            "current_Q2_mean": current_Q2.mean().item(),
+        }
         # Delayed policy updates
         if self.total_it % self.policy_freq == 0:
 
@@ -155,7 +162,9 @@ class TD3(object):
                 target_param.data.copy_(
                     self.tau * param.data + (1 - self.tau) * target_param.data
                 )
-
+            stats["actor_loss"] = actor_loss.item()
+        return stats
+            
     def dumps(self):
         return {
             "critic": self.critic.state_dict(),
