@@ -58,3 +58,7 @@ class TD3Config(BaseConfig, ReplayConfig):
     warmup_steps: int = 25000
     num_of_new_step_per_train: int = 1
     train_per_step: int = 1
+    actor_hidden_dim: int = 256
+    critic_hidden_dim: int = 256
+    actor_lr: float = 3e-4
+    critic_lr: float = 3e-4

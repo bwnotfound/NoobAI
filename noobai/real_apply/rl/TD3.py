@@ -32,6 +32,11 @@ config.num_of_new_step_per_train = 32
 config.train_per_step = 2
 config.warmup_steps = 50000
 
+config.actor_hidden_dim = 256
+config.critic_hidden_dim = 256
+config.actor_lr = 3e-4
+config.critic_lr = 3e-4
+
 sample_data_mode = [
     DataMode.state,
     DataMode.action,
@@ -49,6 +54,10 @@ config.num_actions = action_dim = env.action_space.shape[0]
 config.max_action = max_action = float(env.action_space.high[0])
 agent = TD3(
     state_dim,
+    config.actor_hidden_dim,
+    config.critic_hidden_dim,
+    config.actor_lr,
+    config.critic_lr,
     action_dim,
     max_action,
     policy_noise=config.policy_noise * max_action,
