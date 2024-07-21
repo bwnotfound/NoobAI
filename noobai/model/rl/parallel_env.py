@@ -104,7 +104,6 @@ class GymEnvSimpleWrapper:
             self.dones.append(done)
             self.actions.append(action_numpy)
             self.next_states.append(next_state)
-            self.env_is_done = done
         else:
             data = []
             for data_mode in self.sample_data_mode:
@@ -121,6 +120,7 @@ class GymEnvSimpleWrapper:
                 else:
                     raise RuntimeError(f"Cannot specified data_mode: {data_mode}")
             replay_buffer.add(data)
+        self.env_is_done = done
         self.ep_reward += reward
         self.state = next_state
         return done, self.ep_reward

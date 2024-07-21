@@ -110,20 +110,9 @@ def eval():
 #     t_bar.update()
 # env_wrapper.stop()
 
-done, ep_reward = True, 0
 
 for train_step in range(config.train_eps):
-    # done, ep_reward = env_wrapper.step(get_action, replay_buffer, device=config.device)
-    if done:
-        state, _ = env.reset()
-        ep_reward = 0
-        done = False
-    action = get_action(torch.FloatTensor(state).to(config.device).unsqueeze(0)).cpu().detach().flatten().numpy()
-    next_state, reward, terminated, truncated, _ = env.step(action)
-    done = terminated or truncated
-    replay_buffer.add([state, action, next_state, reward, done])
-    state = next_state
-    ep_reward += reward
+    done, ep_reward = env_wrapper.step(get_action, replay_buffer, device=config.device)
     
     if done:
         t_bar.set_postfix({"ep_reward": ep_reward})
