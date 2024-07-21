@@ -9,7 +9,7 @@ class SimpleResWrapper(nn.Module):
             model = [model]
         if raw_add:
             model.append(nn.Identity())
-        self.model = nn.Sequential(*model)
+        self.model = nn.ModuleList(*model)
         self.alpha = alpha
 
     def forward(self, x):

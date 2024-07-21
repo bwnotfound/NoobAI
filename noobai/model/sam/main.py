@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 from noobai.model.sam.model import STM
 from noobai.task.memory.number_recall import NumberRecallDataset
 from noobai.data.util import load_model
-from noobai.util.trainer import SimpleTrainer
+from noobai.util.trainer import NoobTrainer
 
 
 class Config:
@@ -83,7 +83,7 @@ def train(config_path=None, device=None):
         step = 0
 
     model.train()
-    trainer = SimpleTrainer(
+    trainer = NoobTrainer(
         model,
         dataloader,
         optimizer,

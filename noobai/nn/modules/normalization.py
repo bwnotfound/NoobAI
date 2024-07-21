@@ -22,3 +22,16 @@ class RMSNorm(nn.Module):
         view_shape[target_dim] = -1
         output = self.l2_norm(x.float()) * self.weight.view(*view_shape)
         return output.type_as(x)
+
+
+class PixelNorm(nn.Module):
+
+    def __init__(self, dim=1, eps=1e-8):
+        super().__init__()
+        self.eps = eps
+        self.dim = dim
+
+    def forward(self, input):
+        return input / torch.sqrt(
+            torch.mean(input**2, dim=self.dim, keepdim=True) + self.eps
+        )

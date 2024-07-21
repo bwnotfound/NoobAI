@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = 'noobai'
 authors = [{ name = '蓝白bw', email = '2846131442@qq.com' }]
-version = '0.0.2'
+version = '0.0.3'
 description = 'Simple ai tools created by 蓝白bw'
 license = { file = "LICENSE" }
 dependencies = ['torch', 'numpy', 'tqdm']
