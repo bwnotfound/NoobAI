@@ -85,7 +85,7 @@ fill_replay_buffer_with_random_data(
 
 import wandb
 
-wandb.init(project="rl", config=asdict(config))
+wandb.init(project="rl-TD3", config=asdict(config))
 
 t_bar = tqdm(total=config.train_eps, ncols=80, colour="green")
 
