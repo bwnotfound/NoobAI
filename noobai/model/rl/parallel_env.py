@@ -1,6 +1,6 @@
 import copy
 import time
-from threading import Thread, Event
+from threading import Thread, Event, Semaphore
 
 # from queue import Queue
 
@@ -227,7 +227,7 @@ class GymEnvContinuousWrapper:
         model,
         replay_buffer: BaseReplayBuffer,
         device=None,
-        interrupt_event: Event = None,
+        num_of_new_step_per_train: Semaphore = None,
     ):
         if device is None:
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -246,8 +246,6 @@ class GymEnvContinuousWrapper:
             env_list = [copy.deepcopy(self.base_env) for _ in range(self.num_workers)]
 
             while not self.stop_event.is_set():
-                while interrupt_event is not None and interrupt_event.is_set():
-                    time.sleep(0.001)
                 for i in range(self.num_workers):
                     if not env_is_dones[i]:
                         continue
@@ -275,13 +273,13 @@ class GymEnvContinuousWrapper:
                                     raise RuntimeError(
                                         f"Cannot specified data_mode: {data_mode}"
                                     )
+                            if num_of_new_step_per_train is not None:
+                                num_of_new_step_per_train.acquire()
                             replay_buffer.add(data)
                     state, _ = env_list[i].reset()
                     last_states[i] = state
                     env_is_dones[i] = False
-                last_states_numpy = np.array(
-                    [np.array(last_state) for last_state in last_states]
-                )
+                last_states_numpy = np.array(last_states)
                 model_input = torch.FloatTensor(last_states_numpy).to(device)
                 model_output = model(model_input)
                 if isinstance(model_output, (list, tuple)):
@@ -294,16 +292,15 @@ class GymEnvContinuousWrapper:
                     done = terminated or truncated
                     if self.need_cum_reward:
                         actions[i].append(action_list_numpy[i])
-                        states[i].append(np.array(last_states[i]))
+                        states[i].append(last_states[i])
                         rewards[i].append(reward)
                         dones[i].append(done)
-                        env_is_dones[i] = done
                         next_states[i].append(np.array(state))
                     else:
                         data = []
                         for data_mode in self.sample_data_mode:
                             if data_mode == DataMode.state:
-                                data.append(np.array(last_states[i]))
+                                data.append(last_states[i])
                             elif data_mode == DataMode.action:
                                 data.append(action_list_numpy[i])
                             elif data_mode == DataMode.reward:
@@ -316,7 +313,11 @@ class GymEnvContinuousWrapper:
                                 raise RuntimeError(
                                     f"Cannot specified data_mode: {data_mode}"
                                 )
+                        if num_of_new_step_per_train is not None:
+                            num_of_new_step_per_train.acquire()
                         replay_buffer.add(data)
+                    env_is_dones[i] = done
+                    last_states[i] = state
 
         Thread(target=run).start()
 
@@ -344,7 +345,7 @@ def fill_replay_buffer_with_random_data(
         if done:
             state, _ = env.reset()
             done = False
-            tqdm.write(f"Total reward: {total_reward}")
+            t_bar.set_postfix({"Total_reward": total_reward})
             total_reward = 0
         action = action_func()
         action = np.array(action)

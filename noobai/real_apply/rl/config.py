@@ -56,3 +56,5 @@ class TD3Config(BaseConfig, ReplayConfig):
     expl_noise: float = 0.1
     
     warmup_steps: int = 25000
+    num_of_new_step_per_train: int = 1
+    train_per_step: int = 1

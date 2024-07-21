@@ -4,7 +4,7 @@ project_dir = "noobai".join(__file__.split("noobai")[:-1])
 
 sys.path.append(project_dir)
 import time
-from threading import Event
+from threading import Event, Semaphore
 from dataclasses import asdict
 
 import torch
@@ -27,7 +27,10 @@ config.device = "cuda"
 config.env_name = "HalfCheetah-v4"
 config.batch_size = 256
 config.policy_freq = 2
-config.env_num_workers = 1
+config.env_num_workers = 32
+config.num_of_new_step_per_train = 32
+config.train_per_step = 2
+config.warmup_steps = 50000
 
 sample_data_mode = [
     DataMode.state,
@@ -38,8 +41,8 @@ sample_data_mode = [
 ]
 
 env = gym.make(config.env_name)
-# env_wrapper = gecw(env, config.env_num_workers, sample_data_mode=sample_data_mode)
-env_wrapper = gesw(env, sample_data_mode=sample_data_mode)
+env_wrapper = gecw(env, config.env_num_workers, sample_data_mode=sample_data_mode)
+# env_wrapper = gesw(env, sample_data_mode=sample_data_mode)
 
 config.num_states = state_dim = env.observation_space.shape[0]
 config.num_actions = action_dim = env.action_space.shape[0]
@@ -93,34 +96,37 @@ def eval():
     return total_reward
 
 
-# initial_flag = False
-# stop_event = Event()
-# env_wrapper.start(
-#     agent.actor, replay_buffer, device=config.device, interrupt_event=stop_event
-# )
-# for train_step in range(config.train_eps):
-#     while (initial_flag and replay_buffer.new_in_after_sample < config.batch_size) or (
-#         not initial_flag and replay_buffer.new_in_after_sample < 20
-#     ):
-#         time.sleep(0.001)
-#     stop_event.set()
-#     stats = agent.train(replay_buffer, batch_size=config.batch_size)
-#     stop_event.clear()
-#     wandb.log(stats)
-
-#     t_bar.update()
-# env_wrapper.stop()
-
-
+num_of_new_step_per_train = Semaphore(config.num_of_new_step_per_train)
+env_wrapper.start(
+    get_action,
+    replay_buffer,
+    device=config.device,
+    num_of_new_step_per_train=num_of_new_step_per_train,
+)
 for train_step in range(config.train_eps):
-    done, ep_reward = env_wrapper.step(get_action, replay_buffer, device=config.device)
+    if train_step % config.train_per_step == 0:
+        while num_of_new_step_per_train._value > 0:
+            time.sleep(0.001)
+        num_of_new_step_per_train.release(config.num_of_new_step_per_train)
     stats = agent.train(replay_buffer, batch_size=config.batch_size)
-    if done:
-        t_bar.set_postfix({"ep_reward": ep_reward})
-        stats["train_episode_reward"] = ep_reward
-    t_bar.update()
     if train_step % config.eval_freq == 0:
         eval_reward = eval()
-        stats["eval_reward"] = eval_reward
+        stats["eval_reward"] = eval_reward  
         tqdm.write(f"Train step: {train_step} Eval_reward: {eval_reward}")
     wandb.log(stats)
+    t_bar.update()
+env_wrapper.stop()
+
+
+# for train_step in range(config.train_eps):
+#     done, ep_reward = env_wrapper.step(get_action, replay_buffer, device=config.device)
+#     stats = agent.train(replay_buffer, batch_size=config.batch_size)
+#     if done:
+#         t_bar.set_postfix({"ep_reward": ep_reward})
+#         stats["train_episode_reward"] = ep_reward
+#     t_bar.update()
+#     if train_step % config.eval_freq == 0:
+#         eval_reward = eval()
+#         stats["eval_reward"] = eval_reward
+#         tqdm.write(f"Train step: {train_step} Eval_reward: {eval_reward}")
+#     wandb.log(stats)
