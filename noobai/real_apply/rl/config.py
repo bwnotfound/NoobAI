@@ -2,16 +2,19 @@ from dataclasses import dataclass
 
 @dataclass
 class BaseConfig:
-    env_name = "CartPole-v1"  # 环境名字
-    seed = 1437  # 随机种子
-    device = "cuda"  # device to use
+    env_name: str = "CartPole-v1"  # 环境名字
+    seed : int= 1437  # 随机种子
+    max_steps: int = None  # 每个回合的最大步数
+    device: str = "cuda"  # device to use
 
-    train_eps = 10000000  # 训练的回合数，按照batch_size算
-    max_steps = None  # 每个回合的最大步数
-    eval_freq = 100  # 评估的回合数
-    batch_size = 256
-    mini_batch_size = 256
-    env_num_workers = 128
+    train_eps: int = 10000000  # 训练的回合数，按照batch_size算
+    eval_freq: int = 5000
+    eval_eps: int = 10  # 评估的回合数
+
+    batch_size: int = 256
+    mini_batch_size: int = 256
+    env_num_workers: int = 128
+    
 
     # random_ratio = 0.1  # 随机动作的概率
     # gamma = 0.99  # 折扣因子
@@ -21,29 +24,35 @@ class BaseConfig:
     # eps_clip = 0.15  # epsilon-clip
     # entropy_coef = 0.01  # entropy的系数
     
-    grad_clip_max = None
+    lr: float = 3e-4
+    grad_clip_max: float = None
 
-    num_actions = None
-    num_states = None
-    max_action = None
-    
+    num_actions: int = None
+    num_states: int = None
+    max_action: float = None
+
+@dataclass
+class ReplayConfig:
+    capacity: int = int(1e6)
+
 @dataclass
 class ACConfig(BaseConfig):
-    actor_hidden_dim = 128  # actor网络的隐藏层维度
-    critic_hidden_dim = 128  # critic网络的隐藏层维度
-    actor_lr = 3e-4  # actor网络的学习率
-    critic_lr = 3e-4  # critic网络的学习率
+    actor_hidden_dim: int = 128  # actor网络的隐藏层维度
+    critic_hidden_dim: int = 128  # critic网络的隐藏层维度
+    actor_lr: float = 3e-4  # actor网络的学习率
+    critic_lr: float = 3e-4  # critic网络的学习率
     
-    random_ratio = 0.1  # 随机动作的概率
-    gamma = 0.99  # 折扣因子
-    lamda = 0.98  # GAE参数
+    random_ratio: float = 0.1  # 随机动作的概率
+    gamma: float = 0.99  # 折扣因子
+    lamda: float = 0.98  # GAE参数
     
 @dataclass
-class TD3Config(BaseConfig):
-    policy_noise = 0.2
-    noise_clip = 0.5
-    policy_freq = 2
-    discount = 0.99
-    tau = 0.005
-    expl_noise = 0.1
+class TD3Config(BaseConfig, ReplayConfig):
+    policy_noise: float = 0.2
+    noise_clip: float = 0.5
+    policy_freq: int = 2
+    discount: float = 0.99
+    tau: float = 0.005
+    expl_noise: float = 0.1
     
+    warmup_steps: int = 25000

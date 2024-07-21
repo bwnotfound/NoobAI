@@ -5,6 +5,7 @@ project_dir = "noobai".join(__file__.split("noobai")[:-1])
 sys.path.append(project_dir)
 import time
 from threading import Event
+from dataclasses import asdict
 
 import torch
 import gymnasium as gym
@@ -40,9 +41,9 @@ env = gym.make(config.env_name)
 # env_wrapper = gecw(env, config.env_num_workers, sample_data_mode=sample_data_mode)
 env_wrapper = gesw(env, sample_data_mode=sample_data_mode)
 
-state_dim = env.observation_space.shape[0]
-action_dim = env.action_space.shape[0]
-max_action = float(env.action_space.high[0])
+config.num_states = state_dim = env.observation_space.shape[0]
+config.num_actions = action_dim = env.action_space.shape[0]
+config.max_action = max_action = float(env.action_space.high[0])
 agent = TD3(
     state_dim,
     action_dim,
@@ -54,7 +55,7 @@ agent = TD3(
     discount=config.discount,
     device=config.device,
 )
-replay_buffer = FIFOOfflineReplayBuffer(int(1e6))
+replay_buffer = FIFOOfflineReplayBuffer(config.capacity)
 
 
 def get_action(state):
@@ -67,30 +68,30 @@ def get_action(state):
 
 
 fill_replay_buffer_with_random_data(
-    env, replay_buffer, 25000, sample_data_mode=sample_data_mode
+    env, replay_buffer, config.warmup_steps, sample_data_mode=sample_data_mode
 )
 
 import wandb
 
-wandb.init(project="rl", config=config)
+wandb.init(project="rl", config=asdict(config))
 
 t_bar = tqdm(total=config.train_eps, ncols=80, colour="green")
 
-eval_step = 5000
-eval_time = 4
+
 def eval():
-    state, _ = env.reset()
-    done = False
     total_reward = 0
-    for _ in tqdm(range(eval_time), ncols=80, colour="blue", leave=False):
+    for _ in tqdm(range(config.eval_eps), ncols=80, colour="blue", leave=False):
+        state, _ = env.reset()
+        done = False
         while not done:
             action = agent.select_action(state)
             next_state, reward, terminated, truncated, _ = env.step(action)
             done = terminated or truncated
             state = next_state
             total_reward += reward
-    total_reward /= eval_time
+    total_reward /= config.eval_eps
     return total_reward
+
 
 # initial_flag = False
 # stop_event = Event()
@@ -113,13 +114,12 @@ def eval():
 
 for train_step in range(config.train_eps):
     done, ep_reward = env_wrapper.step(get_action, replay_buffer, device=config.device)
-    
+    stats = agent.train(replay_buffer, batch_size=config.batch_size)
     if done:
         t_bar.set_postfix({"ep_reward": ep_reward})
         stats["train_episode_reward"] = ep_reward
-    stats = agent.train(replay_buffer, batch_size=config.batch_size)
     t_bar.update()
-    if train_step % eval_step == 0:
+    if train_step % config.eval_freq == 0:
         eval_reward = eval()
         stats["eval_reward"] = eval_reward
         tqdm.write(f"Train step: {train_step} Eval_reward: {eval_reward}")
