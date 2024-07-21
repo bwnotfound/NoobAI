@@ -7,6 +7,7 @@ import torch.nn.functional as F
 
 # Implementation of Twin Delayed Deep Deterministic Policy Gradients (TD3)
 # Paper: https://arxiv.org/abs/1802.09477
+# Source Code: https://github.com/sfujim/TD3
 
 
 class Actor(nn.Module):
@@ -107,13 +108,11 @@ class TD3(object):
         state, action, next_state, reward, done = sampled_data
         with torch.no_grad():
             # Select action according to policy and add clipped noise
-            noise = (torch.randn_like(action) * self.policy_noise).clamp(
-                -self.noise_clip, self.noise_clip
-            )
-
-            next_action = (self.actor_target(next_state) + noise).clamp(
-                -self.max_action, self.max_action
-            )
+            next_action = self.actor_target(next_state)
+            next_action = next_action + (
+                torch.randn_like(next_action) * self.policy_noise
+            ).clamp(-self.noise_clip, self.noise_clip)
+            next_action = next_action.clamp(-self.max_action, self.max_action)
 
             # Compute the target Q value
             target_Q1, target_Q2 = self.critic_target(next_state, next_action)
