@@ -1,3 +1,15 @@
-主要参数见TD3Config下定义的参数
+Report Url: https://wandb.ai/2846131442-/rl-TD3/reports/RL-TD3-Performance-Report--Vmlldzo4NzU5NDQw
 
+policy_freq以及各个noise参数设置留待以后探索。
 
+目前探索了batch_size, warmup_step, replay_buffer_capacity, num_of_new_step_per_train_step对于performance的影响
+
+以下是总结
+
+在训练次数足够时，warmup_step应当尽可能小以避免开局随机data留存在replay_buffer过多导致训练放缓以及性能下降
+
+replay_buffer_capacity过大并不会带来明显的性能提升，而过小则会极大影响模型的performance，建议capacity适中
+
+batch_size暂时探索了256和512两个尺寸。通常情况下更大的batch_size会有明显的性能提升，但部分情况下，考虑到num_of_new_step_per_train_step，小的batch_size反而具有明显优势，暂时不清楚原因。
+
+目前设置了env_num_workers和num_of_new_step_per_train相等，因此暂时取num_of_new_step_per_train/train_per_step的比值作为num_of_new_step_per_train_step。可以看到，num_of_new_step_per_train_step对性能影响明显，通常情况下其值越大，性能越好

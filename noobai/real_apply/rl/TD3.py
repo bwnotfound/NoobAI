@@ -23,7 +23,7 @@ from noobai.model.rl.env_wrappers import (
 from noobai.model.rl.replay_buffer import FIFOOfflineReplayBuffer
 
 config = TD3Config()
-config.device = "cuda"
+config.device = "cpu"
 config.env_name = "HalfCheetah-v4"
 config.batch_size = 256
 config.policy_freq = 2
@@ -31,6 +31,7 @@ config.env_num_workers = 32
 config.num_of_new_step_per_train = 32
 config.train_per_step = 2
 config.warmup_steps = 50000
+config.capacity = 1000000
 
 config.actor_hidden_dim = 256
 config.critic_hidden_dim = 256

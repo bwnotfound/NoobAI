@@ -62,3 +62,7 @@ class TD3Config(BaseConfig, ReplayConfig):
     critic_hidden_dim: int = 256
     actor_lr: float = 3e-4
     critic_lr: float = 3e-4
+
+# @dataclass
+# class PPOConfig(BaseConfig, ReplayConfig, ACConfig):
+#     pass
