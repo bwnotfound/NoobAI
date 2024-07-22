@@ -14,7 +14,7 @@ import numpy as np
 
 from noobai.model.rl.TD3 import TD3
 from noobai.real_apply.rl.config import TD3Config
-from noobai.model.rl.parallel_env import (
+from noobai.model.rl.env_wrappers import (
     DataMode,
     GymEnvContinuousWrapper as gecw,
     fill_replay_buffer_with_random_data,
