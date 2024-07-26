@@ -66,3 +66,8 @@ class TD3Config(BaseConfig, ReplayConfig):
 # @dataclass
 # class PPOConfig(BaseConfig, ReplayConfig, ACConfig):
 #     pass
+
+@dataclass
+class DelayConfig(TD3Config):
+    vision_delay_frame: int = 1
+    act_delay_frame: int = 1
